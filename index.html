@@ -167,8 +167,14 @@
         <div class="list" id="celList"></div>
       </div>
 
+      <div class="info" id="checkBox" style="margin-top:14px"></div>
+      <div id="allBox" class="hide" style="margin-top:10px">
+        <div class="list" id="allList"></div>
+      </div>
+
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-o" id="redoBtn">🔄 Rehacer sorteo</button>
+        <button class="btn-o" id="allBtn">👁 Ver todos los resultados</button>
       </div>
     </div>
     </div><!-- /orgPanel -->
@@ -341,7 +347,7 @@ function draw(){
   for(let t=0;t<20000;t++){
     const r = shuffle(names.slice());
     if(names.every((g,i)=>!blocked(g,r[i]))){
-      result = names.map((g,i)=>[g,r[i]]); seen={}; save();
+      result = names.map((g,i)=>[g,r[i]]); seen={}; save(); hideAll();
       renderResults(); $("resCard").classList.remove("hide");
       $("resCard").scrollIntoView({behavior:"smooth"});
       return;
@@ -369,7 +375,34 @@ function msgFor(g,r){
   if(!ON_CLAUDE) return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\nAbre este link para ver a quién le regalas:\n${linkFor(g,r)}\n\n(Si no abre, tu código es: *${codeFor(g,r)}*)\n\n🤫 Es solo para ti, no lo compartas.`;
   return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\n1️⃣ Entra a este link:\n${BASE_URL}\n\n2️⃣ En el recuadro *"¿Recibiste tu código?"* pega este código y toca *Ver*:\n\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
 }
+function renderCheck(){
+  const givers = result.map(x=>x[0]), recv = result.map(x=>x[1]);
+  const allGive = names.every(n=>givers.filter(g=>g===n).length===1);
+  const allRecv = names.every(n=>recv.filter(r=>r===n).length===1);
+  const noSelf = result.every(([g,r])=>g!==r);
+  const noExcl = result.every(([g,r])=>!blocked(g,r));
+  const same = result.length===names.length;
+  const ok = allGive&&allRecv&&noSelf&&noExcl&&same;
+  const li=(c,t)=>`${c?"✅":"❌"} ${t}<br>`;
+  $("checkBox").innerHTML = `<b>${ok?"✅ Sorteo verificado (sin revelar nombres)":"❌ Hay un problema, rehaz el sorteo"}</b><br>`+
+    li(same,`${result.length} de ${names.length} participantes incluidos`)+
+    li(allGive,"Cada persona regala exactamente a 1")+
+    li(allRecv,"Cada persona recibe exactamente 1 regalo — nadie se queda sin regalo")+
+    li(noSelf,"Nadie se regala a sí mismo")+
+    li(noExcl,"Se respetan todas las restricciones");
+}
+let allArm=false, allTimer=null;
+$("allBtn").onclick = () => {
+  if(!$("allBox").classList.contains("hide")){ hideAll(); return; }
+  if(!allArm){ allArm=true; $("allBtn").textContent="⚠️ Toca otra vez: se revelará TODO (incluido tu amigo secreto)"; setTimeout(()=>{ if(allArm){allArm=false;$("allBtn").textContent="👁 Ver todos los resultados";} },4000); return; }
+  allArm=false;
+  $("allList").innerHTML = result.map(([g,r])=>`<div class="item"><span class="n">${esc(g)}</span><span>🎁 ➜ <b>${esc(r)}</b></span></div>`).join("");
+  $("allBox").classList.remove("hide"); $("allBtn").textContent="🙈 Ocultar resultados";
+  clearTimeout(allTimer); allTimer=setTimeout(hideAll,30000);
+};
+function hideAll(){ $("allList").innerHTML=""; $("allBox").classList.add("hide"); $("allBtn").textContent="👁 Ver todos los resultados"; clearTimeout(allTimer); }
 function renderResults(){
+  renderCheck();
   $("wsList").innerHTML = result.map(([g,r],i)=>{
     const wa = "https://wa.me/?text="+encodeURIComponent(msgFor(g,r));
     return `<div class="item"><span class="n">${esc(g)}</span>
