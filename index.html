@@ -295,7 +295,7 @@ const Music = (() => {
       if(on) return; on=true; loop();
       $("muteBtn").classList.remove("hide"); $("muteBtn").textContent="🔊";
     }catch(e){} },
-    stop(){ on=false; clearTimeout(timer); if(master&&ctx){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(0,ctx.currentTime); setTimeout(()=>{ if(!on&&master) master.gain.value=.35; },1500);} $("muteBtn").textContent="🔇"; },
+    stop(){ on=false; clearTimeout(timer); if(master){ try{ master.disconnect(); }catch(e){} } if(ctx){ master=ctx.createGain(); master.gain.value=.35; master.connect(ctx.destination); } $("muteBtn").textContent="🔇"; },
     toggle(){ on ? this.stop() : this.start(); }
   };
 })();
