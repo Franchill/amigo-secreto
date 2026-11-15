@@ -146,6 +146,10 @@
       <h2>🎲 4. Sorteo</h2>
       <p class="hint">Nadie puede salir consigo mismo y se respetan las restricciones.</p>
       <button class="btn btn-big" id="drawBtn">🎁 ¡Realizar sorteo!</button>
+      <label class="btn-o" style="display:block;text-align:center;margin-top:10px;padding:10px;border-radius:12px;cursor:pointer;font-weight:700">
+        📂 Restaurar sorteo desde respaldo
+        <input type="file" id="bkIn" accept=".txt,.json,text/plain" style="display:none">
+      </label>
       <div class="err" id="drawErr"></div>
     </div>
 
@@ -175,7 +179,9 @@
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-o" id="redoBtn">🔄 Rehacer sorteo</button>
         <button class="btn-o" id="allBtn">👁 Ver todos los resultados</button>
+        <button class="btn-g" id="bkBtn">💾 Descargar respaldo</button>
       </div>
+      <p class="hint" style="margin-top:8px">💾 Guarda el respaldo en tu PC, Drive o envíatelo por WhatsApp. Va codificado: no muestra quién le toca a quién.</p>
     </div>
     </div><!-- /orgPanel -->
   </section>
@@ -375,6 +381,26 @@ function msgFor(g,r){
   if(!ON_CLAUDE) return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\nAbre este link para ver a quién le regalas:\n${linkFor(g,r)}\n\n(Si no abre, tu código es: *${codeFor(g,r)}*)\n\n🤫 Es solo para ti, no lo compartas.`;
   return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\n1️⃣ Entra a este link:\n${BASE_URL}\n\n2️⃣ En el recuadro *"¿Recibiste tu código?"* pega este código y toca *Ver*:\n\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
 }
+$("bkBtn").onclick = () => {
+  const data = enc({v:1, names, excl, result, f:$("fFecha").value, m:$("fMonto").value, l:$("fLugar").value, t:new Date().toISOString()});
+  const txt = "RESPALDO AMIGO SECRETO\nNo editar. Restaurar en: " + BASE_URL + "#organizador\n\n" + data;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt],{type:"text/plain"}));
+  a.download = "respaldo-amigo-secreto.txt";
+  document.body.appendChild(a); a.click(); a.remove();
+  $("bkBtn").textContent="✅ Respaldo descargado"; setTimeout(()=>$("bkBtn").textContent="💾 Descargar respaldo",2500);
+};
+$("bkIn").onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  const txt = await f.text(); e.target.value="";
+  const m = txt.match(/s[0-9a-f]{20,}/);
+  const d = m && dec(m[0]);
+  if(!d || !Array.isArray(d.result)){ $("drawErr").textContent="El archivo no es un respaldo válido."; return; }
+  names=d.names; excl=d.excl||[]; result=d.result; seen={};
+  if(d.f!=null)$("fFecha").value=d.f; if(d.m!=null)$("fMonto").value=d.m; if(d.l!=null)$("fLugar").value=d.l;
+  save(); render(); renderResults(); $("resCard").classList.remove("hide");
+  $("drawErr").innerHTML='<span class="ok">✅ Sorteo restaurado correctamente.</span>';
+};
 function renderCheck(){
   const givers = result.map(x=>x[0]), recv = result.map(x=>x[1]);
   const allGive = names.every(n=>givers.filter(g=>g===n).length===1);
