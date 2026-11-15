@@ -115,8 +115,8 @@
         <div><label>Fecha</label><input id="fFecha" value="Sábado 19 de diciembre, 9:00 p.m."></div>
       </div>
       <div class="row">
-        <div><label>Monto del regalo (S/)</label><input id="fMonto" placeholder="Ej. 30 – 50"></div>
-        <div><label>Lugar</label><input id="fLugar" value="Mi casa – VMT"></div>
+        <div><label>Monto del regalo (S/)</label><input id="fMonto" placeholder="Ej. 30 – 50" value="50"></div>
+        <div><label>Lugar</label><input id="fLugar" value="Calle Salvador Allende 367 - VMT"></div>
       </div>
     </div>
 
@@ -383,8 +383,18 @@ $("mNo").onclick = () => { $("modal").classList.add("hide"); cur=null; };
 $("mYes").onclick = () => { $("mName").textContent=cur[1]; $("mStep1").classList.add("hide"); $("mStep2").classList.remove("hide"); };
 $("mHide").onclick = () => { seen[cur[0]]=true; save(); $("mName").textContent=""; $("modal").classList.add("hide"); cur=null; renderResults(); };
 
+/* ---------- datos por defecto ---------- */
+const DEF_NAMES = ["Franz Ticse","Carlos Carhuaricra (Carlitos)","Carlos Vega (Chino)","Eduardo Barron","Susan Paredes","Rafael Alvarez","Katherin Cañari","Gianella Mayuri","Cristina Marca","Daniel Colan","Piero Sandoval","Jesus Sanchez","Karen Rojas","Giancarlo Paulino"];
+const DEF_X = "s351f1e4199b9d44b254c7ad09ead0c3b416edde7a96178162bd9c8e95a1a5368b687e54000124aace9e917245c99e9a7ae53691b8fb29ab65e1767d8a8d2bf2e402298b995d6576c25e4e189a772442aa5b3d2ff2e4623dc9adb19625a669ca7a53224a1f7c8febc441179";
+function applyDefaults(){
+  if(names.length) return;
+  names = DEF_NAMES.slice();
+  const x = dec(DEF_X); if(Array.isArray(x)) excl = x;
+  save();
+}
+
 /* ---------- init ---------- */
-load(); render();
+load(); applyDefaults(); render();
 if(result){ $("resCard").classList.remove("hide"); }
 route();
 </script>
