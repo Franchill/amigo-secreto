@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorteo Amigo Secreto 🎁</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f2a1f; --card:#fffaf2; --ink:#1f2a24; --muted:#6b756f;
+    --red:#c8323c; --red-d:#a2242d; --green:#1f7a4d; --gold:#e8b13a; --line:#eadfcd;
+  }
+  :root{color-scheme:light only}
+  html,body{color:var(--ink)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);
+    background:radial-gradient(circle at 20% 0%,#1d4a35 0,transparent 55%),radial-gradient(circle at 90% 100%,#4a1d22 0,transparent 50%),var(--bg);
+    min-height:100vh;padding:24px 14px 60px}
+  .wrap{max-width:620px;margin:0 auto}
+  header{text-align:center;color:#fff;margin-bottom:18px}
+  header h1{font-family:Fredoka,sans-serif;font-size:clamp(28px,6vw,40px);margin:4px 0;letter-spacing:.5px}
+  header p{margin:0;opacity:.85}
+  .card{background:var(--card);color:var(--ink);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  h2{font-family:Fredoka,sans-serif;font-size:20px;margin:0 0 4px;display:flex;gap:8px;align-items:center}
+  .hint{color:var(--muted);font-size:14px;margin:0 0 12px}
+  label{font-weight:700;font-size:14px;display:block;margin:10px 0 4px}
+  input,textarea,select{width:100%;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);-webkit-text-fill-color:var(--ink)}
+  input::placeholder,textarea::placeholder{color:#9aa39d;-webkit-text-fill-color:#9aa39d}
+  option{color:var(--ink);background:#fff}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green)}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 16px;cursor:pointer;transition:transform .08s,background .15s}
+  button:active{transform:scale(.97)}
+  .btn{background:var(--red);color:#fff}
+  .btn:hover{background:var(--red-d)}
+  .btn-g{background:var(--green);color:#fff}
+  .btn-o{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .btn-big{width:100%;font-size:18px;padding:14px;font-family:Fredoka,sans-serif}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:6px 8px 6px 12px;color:var(--ink);display:flex;gap:6px;align-items:center;font-weight:600}
+  .chip button{background:#f3e7e7;color:var(--red);width:24px;height:24px;padding:0;border-radius:50%;font-size:14px;line-height:1}
+  .count{font-size:13px;color:var(--muted);margin-top:8px}
+  .err{color:var(--red);font-weight:700;font-size:14px;margin-top:8px;min-height:1em}
+  .ok{color:var(--green)}
+  .list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .item{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink)}
+  .item .n{flex:1;font-weight:700}
+  .item.done{opacity:.55}
+  .item a,.item button{font-size:13px;padding:8px 10px;border-radius:10px;text-decoration:none;font-weight:700}
+  .wa{background:#25d366;color:#fff}
+  .tabs{display:flex;gap:6px;background:#f1e8d9;padding:4px;border-radius:12px;margin:8px 0 4px}
+  .tabs button{flex:1;background:transparent;padding:9px;font-size:14px}
+  .tabs button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+  .hide{display:none!important}
+  .reveal{text-align:center;padding:10px 0}
+  .reveal .who{font-size:15px;color:var(--muted)}
+  .gift{font-size:70px;margin:8px 0;cursor:pointer;user-select:none;transition:transform .2s}
+  .gift:hover{transform:rotate(-6deg) scale(1.05)}
+  .name{font-family:Fredoka,sans-serif;font-size:clamp(30px,8vw,44px);color:var(--red);margin:6px 0 10px}
+  .info{background:#f6efe2;border-radius:12px;padding:12px;font-size:14px;text-align:left;margin-top:12px}
+  .info b{color:var(--green)}
+  .modal{position:fixed;inset:0;background:rgba(10,20,15,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .modal .card{max-width:420px;width:100%}
+  textarea{min-height:70px;resize:vertical}
+  small{color:var(--muted)}
+  .snow{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .snow i{position:absolute;top:-10px;color:#fff;opacity:.6;animation:fall linear infinite}
+  @keyframes fall{to{transform:translateY(110vh)}}
+  .wrap{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="snow" id="snow"></div>
+<div class="wrap">
+  <header>
+    <div style="font-size:38px">🎄🎁🎅</div>
+    <h1>Amigo Secreto</h1>
+    <p id="sub">Sorteo del intercambio de regalos</p>
+  </header>
+
+  <!-- ===== VISTA: RESULTADO PERSONAL (link privado) ===== -->
+  <section id="vPersonal" class="hide">
+    <div class="card reveal">
+      <div class="who">Hola <b id="pGiver"></b> 👋</div>
+      <p style="margin:6px 0 0">Toca el regalo para ver a quién le regalas</p>
+      <div class="gift" id="pGift">🎁</div>
+      <div id="pResult" class="hide">
+        <div class="who">Tu amigo secreto es:</div>
+        <div class="name" id="pName"></div>
+        <p style="margin:0">🤫 ¡Que nadie se entere!</p>
+      </div>
+      <div class="info" id="pInfo"></div>
+      <button class="btn-o" id="pBack" style="margin-top:12px">⬅️ Ocultar y salir</button>
+    </div>
+  </section>
+
+  <!-- ===== VISTA: ORGANIZADOR ===== -->
+  <section id="vOrg">
+    <div class="card" style="border:2.5px solid var(--gold)">
+      <h2>🎁 ¿Recibiste tu código?</h2>
+      <p class="hint">Pega aquí el código que te llegó por WhatsApp para ver a quién le regalas.</p>
+      <div class="row">
+        <input id="codeIn" placeholder="Pega tu código aquí" autocomplete="off">
+        <button class="btn" style="flex:0 0 auto" id="codeBtn">Ver</button>
+      </div>
+      <div class="err" id="codeErr"></div>
+    </div>
+    <p style="color:#fff;opacity:.8;text-align:center;font-size:14px;margin:4px 0 12px">— Solo para el organizador —</p>
+    <div class="card">
+      <h2>📋 1. Datos del intercambio</h2>
+      <div class="row">
+        <div><label>Fecha</label><input id="fFecha" value="Sábado 19 de diciembre, 9:00 p.m."></div>
+      </div>
+      <div class="row">
+        <div><label>Monto del regalo (S/)</label><input id="fMonto" placeholder="Ej. 30 – 50"></div>
+        <div><label>Lugar</label><input id="fLugar" value="Mi casa – VMT"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👥 2. Participantes</h2>
+      <p class="hint">Escribe un nombre y presiona Enter, o pega varios separados por coma o salto de línea.</p>
+      <div class="row">
+        <input id="nameIn" placeholder="Nombre del participante">
+        <button class="btn-g" style="flex:0 0 auto" id="addBtn">Agregar</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="count" id="count"></div>
+    </div>
+
+    <div class="card">
+      <h2>🚫 3. Restricciones <small style="font-weight:400">(opcional)</small></h2>
+      <p class="hint">Parejas o personas que no deben tocarse entre sí (en ninguna dirección). 🔒 Se guardan ocultas: solo se ven si tocas "Ver" y se vuelven a ocultar solas a los 8 segundos.</p>
+      <div class="row">
+        <select id="exA"></select><select id="exB"></select>
+        <button class="btn-o" style="flex:0 0 auto" id="exAdd">Añadir</button>
+      </div>
+      <div class="chips" id="exChips"></div>
+      <button class="btn-o hide" id="exToggle" style="margin-top:10px;font-size:13px;padding:7px 12px">👁 Ver</button>
+    </div>
+
+    <div class="card">
+      <h2>🎲 4. Sorteo</h2>
+      <p class="hint">Nadie puede salir consigo mismo y se respetan las restricciones.</p>
+      <button class="btn btn-big" id="drawBtn">🎁 ¡Realizar sorteo!</button>
+      <div class="err" id="drawErr"></div>
+    </div>
+
+    <div class="card hide" id="resCard">
+      <h2>✅ 5. Entregar resultados</h2>
+      <p class="hint">El sorteo está hecho y <b>tú tampoco ves los resultados</b>. Elige cómo entregarlos:</p>
+      <div class="tabs">
+        <button class="on" data-t="ws">📱 Por WhatsApp</button>
+        <button data-t="cel">🤝 Pasar el celular</button>
+      </div>
+
+      <div id="tWs">
+        <p class="hint" style="margin-top:10px" id="wsHint">Cada persona recibe el link de esta página y un <b>código personal</b> que solo muestra <b>su</b> amigo secreto. El nombre va codificado, así que tú no lo ves al enviarlo.<br><small>⚠️ Para que el link abra, primero comparte esta página (botón Compartir de Claude → "cualquiera con el link").</small></p>
+        <div class="list" id="wsList"></div>
+      </div>
+
+      <div id="tCel" class="hide">
+        <p class="hint" style="margin-top:10px">Ideal si están juntos: cada uno toca su nombre, ve su resultado a solas y lo oculta antes de pasar el celular.</p>
+        <div class="list" id="celList"></div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-o" id="redoBtn">🔄 Rehacer sorteo</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- modal pasar celular -->
+<div class="modal hide" id="modal">
+  <div class="card reveal">
+    <div id="mStep1">
+      <div class="who">¿Eres <b id="mGiver"></b>?</div>
+      <p style="margin:8px 0 14px;font-size:14px;color:var(--muted)">Asegúrate de que nadie más mire la pantalla 👀</p>
+      <div class="row"><button class="btn-o" id="mNo">No, volver</button><button class="btn" id="mYes">Sí, ver mi resultado</button></div>
+    </div>
+    <div id="mStep2" class="hide">
+      <div class="who">Tu amigo secreto es:</div>
+      <div class="gift" style="cursor:default">🎁</div>
+      <div class="name" id="mName"></div>
+      <button class="btn-g btn-big" id="mHide">Listo, ocultar 🙈</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* URL pública de esta página (se completa al publicar) */
+const ON_CLAUDE = /claude\.ai|claudeusercontent|claude\.site/.test(location.hostname);
+const BASE_URL = ON_CLAUDE ? "https://claude.ai/artifact/BtdX1avSWxdAVnZfEbE1Fu" : (location.origin + location.pathname);
+const KEY = "navidad-amigo-secreto-2026";
+
+/* ---------- utilidades de codificación (oculta el nombre en el link) ---------- */
+function enc(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let hex = "";
+  for(let i=0;i<bytes.length;i++){
+    const b = bytes[i] ^ KEY.charCodeAt(i % KEY.length) ^ ((i*37)&255);
+    hex += b.toString(16).padStart(2,"0");
+  }
+  return "s" + hex;
+}
+function dec(code){
+  if(!code || code[0]!=="s") return null;
+  const hex = code.slice(1); if(hex.length%2) return null;
+  const bytes = new Uint8Array(hex.length/2);
+  for(let i=0;i<bytes.length;i++){
+    bytes[i] = parseInt(hex.substr(i*2,2),16) ^ KEY.charCodeAt(i % KEY.length) ^ ((i*37)&255);
+  }
+  try{ return JSON.parse(new TextDecoder().decode(bytes)); }catch(e){ return null; }
+}
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- nieve ---------- */
+(function(){const s=$("snow");for(let i=0;i<28;i++){const f=document.createElement("i");f.textContent="❄";f.style.left=Math.random()*100+"%";f.style.fontSize=(8+Math.random()*12)+"px";f.style.animationDuration=(7+Math.random()*10)+"s";f.style.animationDelay=(-Math.random()*15)+"s";s.appendChild(f);}})();
+
+/* ---------- vista personal ---------- */
+function showPersonal(data){
+  $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
+  $("pGiver").textContent = data.g;
+  $("pName").textContent = data.r;
+  let info = "";
+  if(data.f) info += "📅 <b>Fecha:</b> "+esc(data.f)+"<br>";
+  if(data.l) info += "📍 <b>Lugar:</b> "+esc(data.l)+"<br>";
+  if(data.m) info += "💰 <b>Monto del regalo:</b> S/ "+esc(data.m)+"<br>";
+  info += "🤫 Guarda el secreto hasta el intercambio.";
+  $("pInfo").innerHTML = info;
+  $("pGift").onclick = () => { $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); };
+}
+$("codeBtn").onclick = () => {
+  const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-fA-Fs]/g,"").toLowerCase();
+  const d = dec(c.startsWith("s")?c:"s"+c);
+  if(d && d.g && d.r){ $("codeErr").textContent=""; $("codeIn").value=""; showPersonal(d); window.scrollTo(0,0); }
+  else $("codeErr").textContent = "Código no válido. Cópialo completo del mensaje.";
+};
+$("codeIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("codeBtn").click(); } });
+$("pBack").onclick = () => {
+  $("pResult").classList.add("hide"); $("pGift").textContent="🎁"; $("pName").textContent="";
+  $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide");
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+};
+function route(){
+  const h = location.hash.replace(/^#/,"");
+  const d = dec(h);
+  if(d && d.g && d.r){ showPersonal(d); }
+  else { $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide"); }
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- estado organizador ---------- */
+let names = [], excl = [], result = null, seen = {}, showEx = false, exTimer = null;
+function save(){ try{ localStorage.setItem("as_state", JSON.stringify({names,excl,result,seen,f:$("fFecha").value,m:$("fMonto").value,l:$("fLugar").value})); }catch(e){} }
+function load(){ try{ const s=JSON.parse(localStorage.getItem("as_state")||"null"); if(s){names=s.names||[];excl=s.excl||[];result=s.result||null;seen=s.seen||{}; if(s.f!=null)$("fFecha").value=s.f; if(s.m!=null)$("fMonto").value=s.m; if(s.l!=null)$("fLugar").value=s.l;} }catch(e){} }
+
+function addNames(raw){
+  raw.split(/[,\n;]+/).map(s=>s.trim()).filter(Boolean).forEach(n=>{
+    if(!names.some(x=>x.toLowerCase()===n.toLowerCase())) names.push(n);
+  });
+  invalidate(); render();
+}
+function invalidate(){ if(result){ result=null; seen={}; $("resCard").classList.add("hide"); } save(); }
+
+function render(){
+  $("chips").innerHTML = names.map((n,i)=>`<span class="chip">${esc(n)}<button data-i="${i}" title="Quitar">✕</button></span>`).join("");
+  $("count").textContent = names.length ? `${names.length} participante${names.length>1?"s":""}` : "Aún no hay participantes";
+  const opts = '<option value="">—</option>'+names.map(n=>`<option>${esc(n)}</option>`).join("");
+  $("exA").innerHTML = opts; $("exB").innerHTML = opts;
+  excl = excl.filter(([a,b])=>names.includes(a)&&names.includes(b));
+  $("exChips").innerHTML = excl.map(([a,b],i)=>`<span class="chip">${showEx?esc(a)+" ⇄ "+esc(b):"🔒 Restricción "+(i+1)}<button data-x="${i}">✕</button></span>`).join("");
+  $("exToggle").classList.toggle("hide", !excl.length);
+  $("exToggle").textContent = showEx ? "🙈 Ocultar" : "👁 Ver";
+  if(result) renderResults();
+}
+
+$("chips").onclick = e => { const i=e.target.dataset.i; if(i!=null){ names.splice(+i,1); invalidate(); render(); } };
+$("exChips").onclick = e => { const i=e.target.dataset.x; if(i!=null){ excl.splice(+i,1); invalidate(); render(); } };
+$("addBtn").onclick = () => { addNames($("nameIn").value); $("nameIn").value=""; $("nameIn").focus(); };
+$("nameIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("addBtn").click(); } });
+$("nameIn").addEventListener("paste", e => { const t=(e.clipboardData||window.clipboardData).getData("text"); if(/[,\n;]/.test(t)){ e.preventDefault(); addNames(t); } });
+$("exAdd").onclick = () => {
+  const a=$("exA").value,b=$("exB").value;
+  if(!a||!b||a===b) return;
+  if(!excl.some(([x,y])=>(x===a&&y===b)||(x===b&&y===a))) excl.push([a,b]);
+  $("exA").value=""; $("exB").value="";
+  invalidate(); render();
+};
+$("exToggle").onclick = () => {
+  showEx = !showEx; clearTimeout(exTimer);
+  if(showEx) exTimer = setTimeout(()=>{ showEx=false; render(); }, 8000);
+  render();
+};
+["fFecha","fMonto","fLugar"].forEach(id=>$(id).addEventListener("input",()=>{ save(); if(result) renderResults(); }));
+
+/* ---------- sorteo ---------- */
+function blocked(a,b){ return a===b || excl.some(([x,y])=>(x===a&&y===b)||(x===b&&y===a)); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const r=crypto.getRandomValues(new Uint32Array(1))[0]%(i+1); [a[i],a[r]]=[a[r],a[i]]; } return a; }
+function draw(){
+  $("drawErr").textContent="";
+  if(names.length<3){ $("drawErr").textContent="Se necesitan al menos 3 participantes."; return; }
+  for(let t=0;t<20000;t++){
+    const r = shuffle(names.slice());
+    if(names.every((g,i)=>!blocked(g,r[i]))){
+      result = names.map((g,i)=>[g,r[i]]); seen={}; save();
+      renderResults(); $("resCard").classList.remove("hide");
+      $("resCard").scrollIntoView({behavior:"smooth"});
+      return;
+    }
+  }
+  $("drawErr").textContent="No hay una combinación posible con esas restricciones. Quita alguna.";
+}
+$("drawBtn").onclick = () => { if(result && !confirmRedo()) return; draw(); };
+$("redoBtn").onclick = () => { if(confirmRedo()) draw(); };
+let redoArm = false;
+function confirmRedo(){
+  if(redoArm){ redoArm=false; $("redoBtn").textContent="🔄 Rehacer sorteo"; return true; }
+  redoArm=true; $("redoBtn").textContent="⚠️ Toca otra vez para confirmar (se anulan los links ya enviados)";
+  setTimeout(()=>{redoArm=false;$("redoBtn").textContent="🔄 Rehacer sorteo";},4000);
+  $("resCard").scrollIntoView({behavior:"smooth"});
+  return false;
+}
+
+/* ---------- resultados ---------- */
+function codeFor(g,r){
+  return enc({g, r, f:$("fFecha").value.trim(), m:$("fMonto").value.trim(), l:$("fLugar").value.trim()});
+}
+function linkFor(g,r){
+  const code = enc({g, r, f:$("fFecha").value.trim(), m:$("fMonto").value.trim(), l:$("fLugar").value.trim()});
+  return BASE_URL + "#" + code;
+}
+function msgFor(g,r){
+  if(!ON_CLAUDE) return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\nAbre este link para ver a quién le regalas:\n${linkFor(g,r)}\n\nSi no te abre, entra a ${BASE_URL} y pega este código en *"¿Recibiste tu código?"*:\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
+  return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\n1️⃣ Entra a este link:\n${BASE_URL}\n\n2️⃣ En el recuadro *"¿Recibiste tu código?"* pega este código y toca *Ver*:\n\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
+}
+function renderResults(){
+  $("wsList").innerHTML = result.map(([g,r],i)=>{
+    const wa = "https://wa.me/?text="+encodeURIComponent(msgFor(g,r));
+    return `<div class="item"><span class="n">${esc(g)}</span>
+      <button class="btn-o" data-copy="${i}">📋 Copiar</button>
+      <a class="wa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a></div>`;
+  }).join("");
+  $("celList").innerHTML = result.map(([g],i)=>`<div class="item ${seen[g]?"done":""}"><span class="n">${esc(g)} ${seen[g]?"✔️":""}</span>
+      <button class="${seen[g]?"btn-o":"btn"}" data-see="${i}">${seen[g]?"Ver de nuevo":"Ver mi amigo"}</button></div>`).join("");
+}
+$("wsList").onclick = async e => {
+  const i=e.target.dataset.copy; if(i==null) return;
+  const [g,r]=result[+i];
+  try{ await navigator.clipboard.writeText(msgFor(g,r)); e.target.textContent="✅ Copiado"; }
+  catch(err){ e.target.textContent="❌ No se pudo"; }
+  setTimeout(()=>e.target.textContent="📋 Copiar",1800);
+};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+  $("tWs").classList.toggle("hide",b.dataset.t!=="ws");
+  $("tCel").classList.toggle("hide",b.dataset.t!=="cel");
+});
+
+/* ---------- modal pasar celular ---------- */
+let cur=null;
+$("celList").onclick = e => {
+  const i=e.target.dataset.see; if(i==null) return;
+  cur=result[+i];
+  $("mGiver").textContent=cur[0]; $("mName").textContent="";
+  $("mStep1").classList.remove("hide"); $("mStep2").classList.add("hide");
+  $("modal").classList.remove("hide");
+};
+$("mNo").onclick = () => { $("modal").classList.add("hide"); cur=null; };
+$("mYes").onclick = () => { $("mName").textContent=cur[1]; $("mStep1").classList.add("hide"); $("mStep2").classList.remove("hide"); };
+$("mHide").onclick = () => { seen[cur[0]]=true; save(); $("mName").textContent=""; $("modal").classList.add("hide"); cur=null; renderResults(); };
+
+/* ---------- init ---------- */
+load(); render();
+if(result){ $("resCard").classList.remove("hide"); }
+route();
+</script>
+</body>
+</html>
