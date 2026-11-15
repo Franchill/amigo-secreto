@@ -93,7 +93,7 @@
         <p style="margin:0">🤫 ¡Que nadie se entere!</p>
       </div>
       <div class="info" id="pInfo"></div>
-      <button class="btn-o" id="pBack" style="margin-top:12px">⬅️ Ocultar y salir</button>
+      <button class="btn-o hide" id="pBack" style="margin-top:12px">⬅️ Retroceder</button>
     </div>
   </section>
 
@@ -317,21 +317,36 @@ const Music = (() => {
   };
 })();
 
+function startSong(){ Music.start(); }
+function stopSong(){ Music.stop(); $("muteBtn").classList.add("hide"); }
+$("muteBtn").onclick = () => Music.toggle();
+
 /* ---------- vista personal ---------- */
+let curPersonal=null;
+function resetGift(){
+  $("pGift").textContent="🎁"; $("pResult").classList.add("hide"); $("pName").textContent="";
+  $("pBack").classList.add("hide"); stopSong();
+}
 function showPersonal(data){
   $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
+  curPersonal = data;
   $("pGiver").textContent = data.g || "";
   $("pGiver").parentNode.classList.toggle("hide", !data.g);
-  data.f = data.f || $("fFecha").value.trim(); data.l = data.l || $("fLugar").value.trim(); data.m = data.m || $("fMonto").value.trim();
-  $("pName").textContent = data.r;
+  const f = data.f || $("fFecha").value.trim(), l = data.l || $("fLugar").value.trim(), m = data.m || $("fMonto").value.trim();
   let info = "";
-  if(data.f) info += "📅 <b>Fecha:</b> "+esc(data.f)+"<br>";
-  if(data.l) info += "📍 <b>Lugar:</b> "+esc(data.l)+"<br>";
-  if(data.m) info += "💰 <b>Monto del regalo:</b> S/ "+esc(data.m)+"<br>";
+  if(f) info += "📅 <b>Fecha:</b> "+esc(f)+"<br>";
+  if(l) info += "📍 <b>Lugar:</b> "+esc(l)+"<br>";
+  if(m) info += "💰 <b>Monto del regalo:</b> S/ "+esc(m)+"<br>";
   info += "🤫 Guarda el secreto hasta el intercambio.";
   $("pInfo").innerHTML = info;
-  $("pGift").onclick = () => { $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); startSong(); };
+  resetGift();
 }
+$("pGift").onclick = () => {
+  if(!curPersonal) return;
+  $("pName").textContent = curPersonal.r;
+  $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); $("pBack").classList.remove("hide");
+  startSong();
+};
 $("codeBtn").onclick = () => {
   const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-zA-Z]/g,"").toLowerCase();
   const d = decAny(c);
@@ -339,12 +354,7 @@ $("codeBtn").onclick = () => {
   else $("codeErr").textContent = "Código no válido. Cópialo completo del mensaje.";
 };
 $("codeIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("codeBtn").click(); } });
-$("pBack").onclick = () => {
-  $("pResult").classList.add("hide"); $("pGift").textContent="🎁"; $("pName").textContent="";
-  stopSong(); $("muteBtn").classList.add("hide");
-  $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide");
-  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
-};
+$("pBack").onclick = () => { resetGift(); window.scrollTo(0,0); };
 function isOrganizer(){
   const h = location.hash.replace(/^#/,"");
   if(h==="organizador"){ try{ localStorage.setItem("as_org","1"); }catch(e){} return true; }
