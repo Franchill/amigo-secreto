@@ -156,6 +156,7 @@
 
     <div class="card hide" id="resCard">
       <h2>✅ 5. Entregar resultados</h2>
+      <div id="drawMeta" style="display:inline-block;background:var(--green);color:#fff;border-radius:10px;padding:6px 12px;font-weight:700;font-size:14px;margin:4px 0 10px"></div>
       <p class="hint">El sorteo está hecho y <b>tú tampoco ves los resultados</b>. Elige cómo entregarlos:</p>
       <div class="tabs">
         <button class="on" data-t="ws">📱 Por WhatsApp</button>
@@ -163,7 +164,7 @@
       </div>
 
       <div id="tWs">
-        <p class="hint" style="margin-top:10px" id="wsHint">Cada persona recibe el link de esta página y un <b>código personal</b> que solo muestra <b>su</b> amigo secreto. El nombre va codificado, así que tú no lo ves al enviarlo.<br><small>⚠️ Para que el link abra, primero comparte esta página (botón Compartir de Claude → "cualquiera con el link").</small></p>
+        <p class="hint" style="margin-top:10px" id="wsHint">Cada persona recibe un <b>link privado</b> que solo muestra <b>su</b> amigo secreto. El nombre va codificado, así que tú no lo ves al enviarlo.</p>
         <div class="list" id="wsList"></div>
       </div>
 
@@ -371,9 +372,9 @@ function route(){
 window.addEventListener("hashchange", route);
 
 /* ---------- estado organizador ---------- */
-let names = [], excl = [], result = null, seen = {}, showEx = false, exTimer = null;
-function save(){ try{ localStorage.setItem("as_state", JSON.stringify({names,excl,result,seen,f:$("fFecha").value,m:$("fMonto").value,l:$("fLugar").value})); }catch(e){} }
-function load(){ try{ const s=JSON.parse(localStorage.getItem("as_state")||"null"); if(s){names=s.names||[];excl=s.excl||[];result=s.result||null;seen=s.seen||{}; if(s.f!=null)$("fFecha").value=s.f; if(s.m!=null)$("fMonto").value=s.m; if(s.l!=null)$("fLugar").value=s.l;} }catch(e){} }
+let names = [], excl = [], result = null, seen = {}, showEx = false, exTimer = null, drawNo = 0, drawAt = null;
+function save(){ try{ localStorage.setItem("as_state", JSON.stringify({names,excl,result,seen,drawNo,drawAt,f:$("fFecha").value,m:$("fMonto").value,l:$("fLugar").value})); }catch(e){} }
+function load(){ try{ const s=JSON.parse(localStorage.getItem("as_state")||"null"); if(s){names=s.names||[];excl=s.excl||[];result=s.result||null;seen=s.seen||{};drawNo=s.drawNo||0;drawAt=s.drawAt||null; if(s.f!=null)$("fFecha").value=s.f; if(s.m!=null)$("fMonto").value=s.m; if(s.l!=null)$("fLugar").value=s.l;} }catch(e){} }
 
 function addNames(raw){
   raw.split(/[,\n;]+/).map(s=>s.trim()).filter(Boolean).forEach(n=>{
@@ -423,9 +424,10 @@ function draw(){
   for(let t=0;t<20000;t++){
     const r = shuffle(names.slice());
     if(names.every((g,i)=>!blocked(g,r[i]))){
-      result = names.map((g,i)=>[g,r[i]]); seen={}; save(); hideAll();
+      result = names.map((g,i)=>[g,r[i]]); seen={}; drawNo++; drawAt=new Date().toISOString(); save(); hideAll();
+      const firstShow = $("resCard").classList.contains("hide");
       renderResults(); $("resCard").classList.remove("hide");
-      $("resCard").scrollIntoView({behavior:"smooth"});
+      if(firstShow) $("resCard").scrollIntoView({behavior:"smooth"});
       return;
     }
   }
@@ -438,7 +440,6 @@ function confirmRedo(){
   if(redoArm){ redoArm=false; $("redoBtn").textContent="🔄 Rehacer sorteo"; return true; }
   redoArm=true; $("redoBtn").textContent="⚠️ Toca otra vez para confirmar (se anulan los links ya enviados)";
   setTimeout(()=>{redoArm=false;$("redoBtn").textContent="🔄 Rehacer sorteo";},4000);
-  $("resCard").scrollIntoView({behavior:"smooth"});
   return false;
 }
 
@@ -452,7 +453,7 @@ function msgFor(g,r){
   return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\n1️⃣ Entra a este link:\n${BASE_URL}\n\n2️⃣ En el recuadro *"¿Recibiste tu código?"* pega este código y toca *Ver*:\n\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
 }
 $("bkBtn").onclick = () => {
-  const data = enc({v:1, names, excl, result, f:$("fFecha").value, m:$("fMonto").value, l:$("fLugar").value, t:new Date().toISOString()});
+  const data = enc({v:1, names, excl, result, drawNo, drawAt, f:$("fFecha").value, m:$("fMonto").value, l:$("fLugar").value, t:new Date().toISOString()});
   const txt = "RESPALDO AMIGO SECRETO\nNo editar. Restaurar en: " + BASE_URL + "#organizador\n\n" + data;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([txt],{type:"text/plain"}));
@@ -466,7 +467,7 @@ $("bkIn").onchange = async e => {
   const m = txt.match(/s[0-9a-f]{20,}/);
   const d = m && dec(m[0]);
   if(!d || !Array.isArray(d.result)){ $("drawErr").textContent="El archivo no es un respaldo válido."; return; }
-  names=d.names; excl=d.excl||[]; result=d.result; seen={};
+  names=d.names; excl=d.excl||[]; result=d.result; seen={}; drawNo=d.drawNo||drawNo||1; drawAt=d.drawAt||drawAt;
   if(d.f!=null)$("fFecha").value=d.f; if(d.m!=null)$("fMonto").value=d.m; if(d.l!=null)$("fLugar").value=d.l;
   save(); render(); renderResults(); $("resCard").classList.remove("hide");
   $("drawErr").innerHTML='<span class="ok">✅ Sorteo restaurado correctamente.</span>';
@@ -497,7 +498,14 @@ $("allBtn").onclick = () => {
   clearTimeout(allTimer); allTimer=setTimeout(hideAll,30000);
 };
 function hideAll(){ $("allList").innerHTML=""; $("allBox").classList.add("hide"); $("allBtn").textContent="👁 Ver todos los resultados"; clearTimeout(allTimer); }
+function fmtDate(iso){
+  if(!iso) return "";
+  const d=new Date(iso), p=n=>String(n).padStart(2,"0");
+  let hh=d.getHours(), ap=hh>=12?"p.m.":"a.m."; hh=hh%12||12;
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} · ${hh}:${p(d.getMinutes())} ${ap}`;
+}
 function renderResults(){
+  $("drawMeta").textContent = `🎲 Sorteo N.º ${drawNo||1}` + (drawAt?` · ${fmtDate(drawAt)}`:"");
   renderCheck();
   $("wsList").innerHTML = result.map(([g,r],i)=>{
     const wa = "https://wa.me/?text="+encodeURIComponent(msgFor(g,r));
