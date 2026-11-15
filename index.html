@@ -91,6 +91,7 @@
         <div class="who">Tu amigo secreto es:</div>
         <div class="name" id="pName"></div>
         <p style="margin:0">🤫 ¡Que nadie se entere!</p>
+        <div style="margin-top:14px;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:#000"><div id="yt"></div></div>
       </div>
       <div class="info" id="pInfo"></div>
       <button class="btn-o" id="pBack" style="margin-top:12px">⬅️ Ocultar y salir</button>
@@ -299,7 +300,32 @@ const Music = (() => {
     toggle(){ on ? this.stop() : this.start(); }
   };
 })();
-$("muteBtn").onclick = () => Music.toggle();
+/* ---------- video oficial de YouTube (Mariah Carey) ---------- */
+const YT_ID = "yXQViqx6GMY";
+let ytPlayer=null, ytReady=false, ytPlaying=false, ytWanted=false;
+function loadYT(){
+  if(window.YT || document.getElementById("ytApi")) return;
+  const s=document.createElement("script"); s.id="ytApi"; s.src="https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = () => {
+  ytPlayer = new YT.Player("yt", { width:"100%", height:"100%", videoId:YT_ID,
+    playerVars:{ playsinline:1, rel:0, modestbranding:1 },
+    events:{
+      onReady:()=>{ ytReady=true; if(ytWanted) ytPlayer.playVideo(); },
+      onStateChange:e=>{ ytPlaying = e.data===1; $("muteBtn").textContent = ytPlaying?"🔊":"🔇"; },
+      onError:()=>{ ytReady=false; if(ytWanted) Music.start(); }
+    }});
+};
+function startSong(){
+  ytWanted=true; $("muteBtn").classList.remove("hide");
+  if(ytReady){ try{ ytPlayer.playVideo(); return; }catch(e){} }
+  if(!window.YT) setTimeout(()=>{ if(!ytReady && ytWanted) Music.start(); },4000);
+}
+function stopSong(){ ytWanted=false; try{ ytPlayer && ytPlayer.pauseVideo(); }catch(e){} Music.stop(); }
+$("muteBtn").onclick = () => {
+  if(ytReady){ ytPlaying ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); }
+  else Music.toggle();
+};
 
 /* ---------- vista personal ---------- */
 function showPersonal(data){
@@ -314,7 +340,8 @@ function showPersonal(data){
   if(data.m) info += "💰 <b>Monto del regalo:</b> S/ "+esc(data.m)+"<br>";
   info += "🤫 Guarda el secreto hasta el intercambio.";
   $("pInfo").innerHTML = info;
-  $("pGift").onclick = () => { Music.start(); $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); };
+  loadYT();
+  $("pGift").onclick = () => { $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); startSong(); };
 }
 $("codeBtn").onclick = () => {
   const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-zA-Z]/g,"").toLowerCase();
@@ -325,7 +352,7 @@ $("codeBtn").onclick = () => {
 $("codeIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("codeBtn").click(); } });
 $("pBack").onclick = () => {
   $("pResult").classList.add("hide"); $("pGift").textContent="🎁"; $("pName").textContent="";
-  Music.stop(); $("muteBtn").classList.add("hide");
+  stopSong(); $("muteBtn").classList.add("hide");
   $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide");
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
 };
