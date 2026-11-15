@@ -217,6 +217,29 @@ function dec(code){
   }
   try{ return JSON.parse(new TextDecoder().decode(bytes)); }catch(e){ return null; }
 }
+/* código corto: solo el nombre del amigo secreto, ofuscado y en base36 */
+function encShort(name){
+  const b = new TextEncoder().encode(name);
+  let n = 1n;
+  for(let i=0;i<b.length;i++){ n = (n<<8n) | BigInt(b[i] ^ KEY.charCodeAt((i*7+3) % KEY.length)); }
+  return "a" + n.toString(36);
+}
+function decShort(code){
+  if(!/^a[0-9a-z]+$/.test(code)) return null;
+  try{
+    let n = 0n; for(const c of code.slice(1)) n = n*36n + BigInt(parseInt(c,36));
+    const out=[]; while(n>1n){ out.unshift(Number(n & 255n)); n >>= 8n; }
+    if(n!==1n) return null;
+    const b = new Uint8Array(out.map((v,i)=>v ^ KEY.charCodeAt((i*7+3) % KEY.length)));
+    const s = new TextDecoder("utf-8",{fatal:true}).decode(b);
+    return s.trim() ? s : null;
+  }catch(e){ return null; }
+}
+function decAny(code){
+  const d = dec(code); if(d && d.r) return d;
+  const r = decShort(code); if(r) return {r};
+  return null;
+}
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -226,7 +249,9 @@ const esc = s => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"'
 /* ---------- vista personal ---------- */
 function showPersonal(data){
   $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
-  $("pGiver").textContent = data.g;
+  $("pGiver").textContent = data.g || "";
+  $("pGiver").parentNode.classList.toggle("hide", !data.g);
+  data.f = data.f || $("fFecha").value.trim(); data.l = data.l || $("fLugar").value.trim(); data.m = data.m || $("fMonto").value.trim();
   $("pName").textContent = data.r;
   let info = "";
   if(data.f) info += "📅 <b>Fecha:</b> "+esc(data.f)+"<br>";
@@ -237,9 +262,9 @@ function showPersonal(data){
   $("pGift").onclick = () => { $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); };
 }
 $("codeBtn").onclick = () => {
-  const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-fA-Fs]/g,"").toLowerCase();
-  const d = dec(c.startsWith("s")?c:"s"+c);
-  if(d && d.g && d.r){ $("codeErr").textContent=""; $("codeIn").value=""; showPersonal(d); window.scrollTo(0,0); }
+  const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-zA-Z]/g,"").toLowerCase();
+  const d = decAny(c);
+  if(d && d.r){ $("codeErr").textContent=""; $("codeIn").value=""; showPersonal(d); window.scrollTo(0,0); }
   else $("codeErr").textContent = "Código no válido. Cópialo completo del mensaje.";
 };
 $("codeIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("codeBtn").click(); } });
@@ -256,9 +281,9 @@ function isOrganizer(){
 }
 function route(){
   const h = location.hash.replace(/^#/,"");
-  const d = dec(h);
+  const d = decAny(h);
   $("orgPanel").classList.toggle("hide", !isOrganizer());
-  if(d && d.g && d.r){ showPersonal(d); }
+  if(d && d.r){ showPersonal(d); }
   else { $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide"); }
 }
 window.addEventListener("hashchange", route);
@@ -336,15 +361,12 @@ function confirmRedo(){
 }
 
 /* ---------- resultados ---------- */
-function codeFor(g,r){
-  return enc({g, r, f:$("fFecha").value.trim(), m:$("fMonto").value.trim(), l:$("fLugar").value.trim()});
-}
+function codeFor(g,r){ return encShort(r); }
 function linkFor(g,r){
-  const code = enc({g, r, f:$("fFecha").value.trim(), m:$("fMonto").value.trim(), l:$("fLugar").value.trim()});
-  return BASE_URL + "#" + code;
+  return BASE_URL + "#" + codeFor(g,r);
 }
 function msgFor(g,r){
-  if(!ON_CLAUDE) return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\nAbre este link para ver a quién le regalas:\n${linkFor(g,r)}\n\nSi no te abre, entra a ${BASE_URL} y pega este código en *"¿Recibiste tu código?"*:\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
+  if(!ON_CLAUDE) return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\nAbre este link para ver a quién le regalas:\n${linkFor(g,r)}\n\n(Si no abre, tu código es: *${codeFor(g,r)}*)\n\n🤫 Es solo para ti, no lo compartas.`;
   return `🎄 Hola ${g}! Ya se hizo el sorteo del *Amigo Secreto* 🎁\n\n1️⃣ Entra a este link:\n${BASE_URL}\n\n2️⃣ En el recuadro *"¿Recibiste tu código?"* pega este código y toca *Ver*:\n\n${codeFor(g,r)}\n\n🤫 Es solo para ti, no lo compartas.`;
 }
 function renderResults(){
