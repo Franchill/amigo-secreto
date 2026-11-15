@@ -107,6 +107,7 @@
       </div>
       <div class="err" id="codeErr"></div>
     </div>
+    <div id="orgPanel" class="hide">
     <p style="color:#fff;opacity:.8;text-align:center;font-size:14px;margin:4px 0 12px">— Solo para el organizador —</p>
     <div class="card">
       <h2>📋 1. Datos del intercambio</h2>
@@ -170,6 +171,7 @@
         <button class="btn-o" id="redoBtn">🔄 Rehacer sorteo</button>
       </div>
     </div>
+    </div><!-- /orgPanel -->
   </section>
 </div>
 
@@ -246,9 +248,16 @@ $("pBack").onclick = () => {
   $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide");
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
 };
+function isOrganizer(){
+  const h = location.hash.replace(/^#/,"");
+  if(h==="organizador"){ try{ localStorage.setItem("as_org","1"); }catch(e){} return true; }
+  if(h==="salir"){ try{ localStorage.removeItem("as_org"); }catch(e){} return false; }
+  try{ return localStorage.getItem("as_org")==="1"; }catch(e){ return false; }
+}
 function route(){
   const h = location.hash.replace(/^#/,"");
   const d = dec(h);
+  $("orgPanel").classList.toggle("hide", !isOrganizer());
   if(d && d.g && d.r){ showPersonal(d); }
   else { $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide"); }
 }
