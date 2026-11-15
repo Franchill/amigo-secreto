@@ -301,7 +301,7 @@ const Music = (() => {
   };
 })();
 /* ---------- video oficial de YouTube (Mariah Carey) ---------- */
-const YT_ID = "yXQViqx6GMY";
+const YT_ID = "2qIZ1A3P8po";
 let ytPlayer=null, ytReady=false, ytPlaying=false, ytWanted=false;
 function loadYT(){
   if(window.YT || document.getElementById("ytApi")) return;
@@ -309,7 +309,7 @@ function loadYT(){
 }
 window.onYouTubeIframeAPIReady = () => {
   ytPlayer = new YT.Player("yt", { width:"100%", height:"100%", videoId:YT_ID,
-    playerVars:{ playsinline:1, rel:0, modestbranding:1 },
+    playerVars:{ playsinline:1, rel:0, modestbranding:1, start:32 },
     events:{
       onReady:()=>{ ytReady=true; if(ytWanted) ytPlayer.playVideo(); },
       onStateChange:e=>{ ytPlaying = e.data===1; $("muteBtn").textContent = ytPlaying?"🔊":"🔇"; },
