@@ -73,6 +73,7 @@
 </head>
 <body>
 <div class="snow" id="snow"></div>
+<button id="muteBtn" class="hide" style="position:fixed;top:12px;right:12px;z-index:20;background:rgba(255,255,255,.92);border-radius:50%;width:46px;height:46px;padding:0;font-size:22px;box-shadow:0 4px 12px rgba(0,0,0,.3)">🔊</button>
 <div class="wrap">
   <header>
     <div style="font-size:38px">🎄🎁🎅</div>
@@ -258,6 +259,48 @@ const esc = s => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"'
 /* ---------- nieve ---------- */
 (function(){const s=$("snow");for(let i=0;i<28;i++){const f=document.createElement("i");f.textContent="❄";f.style.left=Math.random()*100+"%";f.style.fontSize=(8+Math.random()*12)+"px";f.style.animationDuration=(7+Math.random()*10)+"s";f.style.animationDelay=(-Math.random()*15)+"s";s.appendChild(f);}})();
 
+/* ---------- música: Jingle Bells (dominio público) con campanitas ---------- */
+const Music = (() => {
+  let ctx=null, master=null, on=false, timer=null;
+  const F={G:392,A:440,B:493.88,C:523.25,D:587.33};
+  const S="B1 B1 B2 B1 B1 B2 B1 D1 G1.5 A.5 B4 C1 C1 C1.5 C.5 C1 B1 B1 B.5 B.5 B1 A1 A1 B1 A2 D2 B1 B1 B2 B1 B1 B2 B1 D1 G1.5 A.5 B4 C1 C1 C1.5 C.5 C1 B1 B1 B.5 B.5 D1 D1 C1 A1 G4"
+    .split(" ").map(t=>[F[t[0]], parseFloat(t.slice(1))]);
+  const BEAT=.3;
+  function bell(f,t,d){
+    [[1,.5],[2,.18],[3,.07],[4.2,.04]].forEach(([m,g])=>{
+      const o=ctx.createOscillator(), v=ctx.createGain();
+      o.type="sine"; o.frequency.value=f*m;
+      v.gain.setValueAtTime(0,t); v.gain.linearRampToValueAtTime(g,t+.01);
+      v.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.6,d*1.6));
+      o.connect(v).connect(master); o.start(t); o.stop(t+Math.max(.7,d*1.7));
+    });
+  }
+  function sleigh(t){ // cascabel suave en cada tiempo
+    const n=ctx.createBufferSource(), b=ctx.createBuffer(1,ctx.sampleRate*.08,ctx.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+    n.buffer=b; const hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=7000;
+    const g=ctx.createGain(); g.gain.value=.05; n.connect(hp).connect(g).connect(master); n.start(t);
+  }
+  function loop(){
+    if(!on) return;
+    let t=ctx.currentTime+.05, total=0;
+    S.forEach(([f,b])=>{ bell(f,t+total*BEAT,b*BEAT); total+=b; });
+    for(let i=0;i<total;i++) sleigh(t+i*BEAT);
+    timer=setTimeout(loop,(total*BEAT+1.2)*1000);
+  }
+  return {
+    start(){ try{
+      if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); master.gain.value=.35; master.connect(ctx.destination); }
+      if(ctx.state==="suspended") ctx.resume();
+      if(on) return; on=true; loop();
+      $("muteBtn").classList.remove("hide"); $("muteBtn").textContent="🔊";
+    }catch(e){} },
+    stop(){ on=false; clearTimeout(timer); if(master&&ctx){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(0,ctx.currentTime); setTimeout(()=>{ if(!on&&master) master.gain.value=.35; },1500);} $("muteBtn").textContent="🔇"; },
+    toggle(){ on ? this.stop() : this.start(); }
+  };
+})();
+$("muteBtn").onclick = () => Music.toggle();
+
 /* ---------- vista personal ---------- */
 function showPersonal(data){
   $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
@@ -271,7 +314,7 @@ function showPersonal(data){
   if(data.m) info += "💰 <b>Monto del regalo:</b> S/ "+esc(data.m)+"<br>";
   info += "🤫 Guarda el secreto hasta el intercambio.";
   $("pInfo").innerHTML = info;
-  $("pGift").onclick = () => { $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); };
+  $("pGift").onclick = () => { Music.start(); $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); };
 }
 $("codeBtn").onclick = () => {
   const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-zA-Z]/g,"").toLowerCase();
@@ -282,6 +325,7 @@ $("codeBtn").onclick = () => {
 $("codeIn").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("codeBtn").click(); } });
 $("pBack").onclick = () => {
   $("pResult").classList.add("hide"); $("pGift").textContent="🎁"; $("pName").textContent="";
+  Music.stop(); $("muteBtn").classList.add("hide");
   $("vPersonal").classList.add("hide"); $("vOrg").classList.remove("hide");
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
 };
