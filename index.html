@@ -262,7 +262,8 @@ function decShort(code){
 }
 function decAny(code){
   const d = dec(code); if(d && d.r) return d;
-  const r = decShort(code); if(r) return {r};
+  const r = decShort(code);
+  if(r){ const k = r.indexOf("\u0001"); return k>0 ? {g:r.slice(0,k), r:r.slice(k+1)} : {r}; }
   return null;
 }
 const $ = id => document.getElementById(id);
@@ -402,6 +403,12 @@ function prefillUrl(name, o){
   }
   return WL.form + "?" + q.toString();
 }
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest('a[target="_blank"]');
+  if(!a || !a.href || a.href.startsWith("javascript")) return;
+  const w = window.open(a.href, "_blank");
+  if(w){ try{ w.opener = null; }catch(_){} e.preventDefault(); }
+});
 function getMe(){ try{ return localStorage.getItem("as_me") || ""; }catch(e){ return ""; } }
 function setMe(n){ try{ n ? localStorage.setItem("as_me", n) : localStorage.removeItem("as_me"); }catch(e){} }
 async function renderWishlists(force){
@@ -453,6 +460,7 @@ function resetGift(){
 function showPersonal(data){
   $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
   curPersonal = data;
+  if(data.g && data.g !== data.r) setMe(data.g);
   $("pGiver").textContent = data.g || "";
   $("pGiver").parentNode.classList.toggle("hide", !data.g);
   const f = data.f || $("fFecha").value.trim(), l = data.l || $("fLugar").value.trim(), m = data.m || $("fMonto").value.trim();
@@ -566,7 +574,7 @@ function confirmRedo(){
 }
 
 /* ---------- resultados ---------- */
-function codeFor(g,r){ return encShort(r); }
+function codeFor(g,r){ return encShort(g + "\u0001" + r); }
 function linkFor(g,r){
   return BASE_URL + "#" + codeFor(g,r);
 }
