@@ -65,6 +65,14 @@
   .modal .card{max-width:420px;width:100%}
   textarea{min-height:70px;resize:vertical}
   small{color:var(--muted)}
+  .wl{text-align:left;margin-top:14px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px}
+  .wl h3{font-family:Fredoka,sans-serif;font-size:18px;margin:0 0 8px}
+  .wl ol{margin:0 0 8px;padding-left:22px}
+  .wl li{margin:4px 0}
+  .wl a{color:var(--green);font-weight:700;word-break:break-all}
+  .wl .meta{font-size:14px;color:var(--ink);margin:3px 0}
+  .wl .empty{color:var(--muted);font-size:14px}
+  .me{font-family:Fredoka,sans-serif;font-size:20px;color:var(--red)}
   .snow{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
   .snow i{position:absolute;top:-10px;color:#fff;opacity:.6;animation:fall linear infinite}
   @keyframes fall{to{transform:translateY(110vh)}}
@@ -91,8 +99,10 @@
         <div class="who">Tu amigo secreto es:</div>
         <div class="name" id="pName"></div>
         <p style="margin:0">🤫 ¡Que nadie se entere!</p>
+        <div class="wl" id="wlFriend"></div>
       </div>
       <div class="info" id="pInfo"></div>
+      <div class="wl" id="wlMine"></div>
       <button class="btn-o hide" id="pBack" style="margin-top:12px">⬅️ Retroceder</button>
     </div>
   </section>
@@ -183,6 +193,7 @@
         <button class="btn-o" id="allBtn">👁 Ver todos los resultados</button>
         <button class="btn-g" id="bkBtn">💾 Descargar respaldo</button>
       </div>
+      <p class="hint" style="margin-top:8px">📝 Listas de deseos: <a href="https://docs.google.com/spreadsheets/d/1dkCXyaOAn8h45mAXyYOB1PNPnUF9c6OOCAE5Rg3evVw/edit" target="_blank" rel="noopener">ver respuestas en Google Sheets</a> · <a href="https://docs.google.com/forms/d/1tqFkdfw0VEi20dlEKC_ubBH0RRGYkjAQGMOE-hx0xDs/edit" target="_blank" rel="noopener">editar formulario</a></p>
       <p class="hint" style="margin-top:8px">💾 Guarda el respaldo en tu PC, Drive o envíatelo por WhatsApp. Va codificado: no muestra quién le toca a quién.</p>
     </div>
     </div><!-- /orgPanel -->
@@ -322,11 +333,122 @@ function startSong(){ Music.start(); }
 function stopSong(){ Music.stop(); $("muteBtn").classList.add("hide"); }
 $("muteBtn").onclick = () => Music.toggle();
 
+/* ---------- lista de deseos (Google Form + Sheet) ---------- */
+const WL = {
+  sheetId: "1dkCXyaOAn8h45mAXyYOB1PNPnUF9c6OOCAE5Rg3evVw",
+  sheet: "Respuestas de formulario 1",
+  form: "https://docs.google.com/forms/d/e/1FAIpQLScUlQ7Kt4VkH7tQV_KDObDKlU37ocYYNXxZj7cVOpoVvvVWEw/viewform",
+  e: { nombre:"1321054989", deseo1:"971842821", link1:"1420039137", deseo2:"787843307", link2:"1234306453",
+       deseo3:"1905034886", link3:"883255403", deseo4:"562063805", link4:"538646990", deseo5:"908390292", link5:"1277331908",
+       talla:"1303512560", gustos:"1089992063", no:"1057981813" }
+};
+let wlData = null, wlLoading = null;
+function wlLoad(force){
+  if(wlData && !force) return Promise.resolve(wlData);
+  if(wlLoading && !force) return wlLoading;
+  wlLoading = new Promise(resolve => {
+    const cb = "wlcb" + Date.now();
+    const s = document.createElement("script");
+    const done = d => { try{ delete window[cb]; }catch(e){} s.remove(); resolve(d); };
+    window[cb] = res => {
+      const map = {};
+      try{
+        const cols = res.table.cols.map(c => (c.label||"").toLowerCase());
+        const idx = k => cols.findIndex(c => c.startsWith(k));
+        const ci = { nombre:idx("nombre"), talla:idx("talla"), gustos:idx("colores"), no:idx("lo que no") };
+        for(let i=1;i<=5;i++){ ci["deseo"+i]=idx("deseo "+i); ci["link"+i]=idx("link "+i); }
+        res.table.rows.forEach(r => {
+          const v = k => { const c = ci[k] >= 0 ? r.c[ci[k]] : null; return c && c.v != null ? String(c.v).trim() : ""; };
+          const n = v("nombre"); if(!n) return;
+          const o = { items:[], talla:v("talla"), gustos:v("gustos"), no:v("no") };
+          for(let i=1;i<=5;i++){ const d=v("deseo"+i), l=v("link"+i); if(d||l) o.items.push({d,l}); }
+          map[n.toLowerCase()] = o; // la última respuesta gana
+        });
+      }catch(e){}
+      wlData = map; done(map);
+    };
+    s.onerror = () => done(wlData || {});
+    setTimeout(() => done(wlData || {}), 12000);
+    s.src = "https://docs.google.com/spreadsheets/d/" + WL.sheetId + "/gviz/tq?headers=1&sheet=" + encodeURIComponent(WL.sheet) +
+            "&tqx=responseHandler:" + cb + "&t=" + Date.now();
+    document.head.appendChild(s);
+  });
+  return wlLoading;
+}
+function safeUrl(u){
+  u = (u||"").trim(); if(!u) return "";
+  if(!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try{ const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ""; }catch(e){ return ""; }
+}
+function wlHtml(o){
+  if(!o || !o.items.length) return '<p class="empty">Todavía no registra su lista de deseos. Vuelve a revisar más tarde 🎄</p>';
+  let h = "<ol>" + o.items.map(({d,l}) => {
+    const u = safeUrl(l);
+    return "<li>" + (d ? esc(d) : "") + (u ? ' — <a href="'+esc(u)+'" target="_blank" rel="noopener">ver link 🔗</a>' : "") + "</li>";
+  }).join("") + "</ol>";
+  if(o.talla) h += '<div class="meta">👕 <b>Talla:</b> '+esc(o.talla)+'</div>';
+  if(o.gustos) h += '<div class="meta">🎨 <b>Gustos:</b> '+esc(o.gustos)+'</div>';
+  if(o.no) h += '<div class="meta">🚫 <b>No le gustaría:</b> '+esc(o.no)+'</div>';
+  return h;
+}
+function prefillUrl(name, o){
+  const q = new URLSearchParams({usp:"pp_url"});
+  q.set("entry."+WL.e.nombre, name);
+  if(o){
+    o.items.forEach((it,i) => { if(i<5){ if(it.d) q.set("entry."+WL.e["deseo"+(i+1)], it.d); if(it.l) q.set("entry."+WL.e["link"+(i+1)], it.l); } });
+    if(o.talla) q.set("entry."+WL.e.talla, o.talla);
+    if(o.gustos) q.set("entry."+WL.e.gustos, o.gustos);
+    if(o.no) q.set("entry."+WL.e.no, o.no);
+  }
+  return WL.form + "?" + q.toString();
+}
+function getMe(){ try{ return localStorage.getItem("as_me") || ""; }catch(e){ return ""; } }
+function setMe(n){ try{ n ? localStorage.setItem("as_me", n) : localStorage.removeItem("as_me"); }catch(e){} }
+async function renderWishlists(force){
+  if(!curPersonal) return;
+  const r = curPersonal.r, me = getMe();
+  $("wlFriend").innerHTML = '<h3>🎁 Lista de deseos de '+esc(r)+'</h3><p class="empty">Cargando…</p>';
+  renderMine(null);
+  const data = await wlLoad(force);
+  if(!curPersonal || curPersonal.r !== r) return;
+  $("wlFriend").innerHTML = '<h3>🎁 Lista de deseos de '+esc(r)+'</h3>' + wlHtml(data[r.toLowerCase()]) +
+    '<button class="btn-o" id="wlRefresh" style="font-size:13px;padding:7px 12px;margin-top:6px">🔄 Actualizar</button>';
+  $("wlRefresh").onclick = () => renderWishlists(true);
+  renderMine(data);
+}
+function renderMine(data){
+  const r = curPersonal ? curPersonal.r : "", me = getMe();
+  const box = $("wlMine");
+  if(!me || me === r){
+    const opts = DEF_NAMES.filter(n => n !== r).map(n => '<option>'+esc(n)+'</option>').join("");
+    box.innerHTML = '<h3>📝 Mi lista de deseos</h3><p class="empty" style="margin-top:0">Para registrar lo que te gustaría recibir, dinos quién eres:</p>'+
+      '<select id="meSel"><option value="">— Elige tu nombre —</option>'+opts+'</select>'+
+      '<label style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:10px"><input type="checkbox" id="meChk" style="width:auto"> <span id="meChkTxt">Confirmo que soy yo</span></label>'+
+      '<div class="err" id="meErr"></div>'+
+      '<button class="btn-g" id="meOk" style="width:100%;margin-top:6px">Continuar</button>';
+    $("meSel").onchange = () => { const v=$("meSel").value; $("meChkTxt").textContent = v ? "Confirmo que soy "+v : "Confirmo que soy yo"; $("meChk").checked=false; };
+    $("meOk").onclick = () => {
+      const v=$("meSel").value;
+      if(!v){ $("meErr").textContent="Elige tu nombre."; return; }
+      if(!$("meChk").checked){ $("meErr").textContent="Marca la casilla para confirmar que eres "+v+"."; return; }
+      setMe(v); renderMine(wlData);
+    };
+    return;
+  }
+  const mine = data ? data[me.toLowerCase()] : null;
+  box.innerHTML = '<h3>📝 Mi lista de deseos</h3><div style="margin-bottom:8px">Eres: <span class="me">'+esc(me)+'</span> <a href="#" id="meChange" style="font-size:13px">(no soy yo)</a></div>'+
+    (data ? wlHtml(mine).replace("Todavía no registra su lista de deseos. Vuelve a revisar más tarde 🎄","Aún no registras tu lista. ¡Agrégala para que tu amigo secreto acierte! 🎯") : '<p class="empty">Cargando…</p>')+
+    '<a class="btn" style="display:block;text-align:center;text-decoration:none;padding:12px;border-radius:12px;margin-top:8px" target="_blank" rel="noopener" href="'+esc(prefillUrl(me, mine))+'">'+(mine&&mine.items.length?"✏️ Agregar / editar mi lista":"➕ Registrar mi lista")+'</a>'+
+    '<p class="empty" style="font-size:12px;margin:8px 0 0">Se abre un formulario con tu nombre ya puesto. Después de enviarlo, los cambios pueden tardar unos minutos en verse aquí.</p>';
+  $("meChange").onclick = e => { e.preventDefault(); setMe(""); renderMine(wlData); };
+}
+
 /* ---------- vista personal ---------- */
 let curPersonal=null;
 function resetGift(){
   $("pGift").textContent="🎁"; $("pResult").classList.add("hide"); $("pName").textContent="";
   $("pBack").classList.add("hide"); stopSong();
+  $("wlFriend").innerHTML=""; $("wlMine").innerHTML=""; $("wlMine").classList.add("hide");
 }
 function showPersonal(data){
   $("vOrg").classList.add("hide"); $("vPersonal").classList.remove("hide");
@@ -346,7 +468,7 @@ $("pGift").onclick = () => {
   if(!curPersonal) return;
   $("pName").textContent = curPersonal.r;
   $("pGift").textContent="🎉"; $("pResult").classList.remove("hide"); $("pBack").classList.remove("hide");
-  startSong();
+  $("wlMine").classList.remove("hide"); startSong(); renderWishlists(false);
 };
 $("codeBtn").onclick = () => {
   const c = $("codeIn").value.trim().replace(/^.*#/,"").replace(/[^0-9a-zA-Z]/g,"").toLowerCase();
